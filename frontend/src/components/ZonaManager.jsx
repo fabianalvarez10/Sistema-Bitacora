@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@nextui-org/react';
 import { Plus, Trash2, Edit } from 'lucide-react';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+import axios from '../api/axios';
 
 export default function ZonaManager({ zonas, onZonasChange }) {
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
@@ -14,9 +12,9 @@ export default function ZonaManager({ zonas, onZonasChange }) {
   const handleSave = async (onClose) => {
     try {
       if (editingId) {
-        await axios.put(`${API_URL}/zonas/${editingId}/`, { nombre, descripcion });
+        await axios.put(`/zonas/${editingId}/`, { nombre, descripcion });
       } else {
-        await axios.post(`${API_URL}/zonas/`, { nombre, descripcion });
+        await axios.post(`/zonas/`, { nombre, descripcion });
       }
       onZonasChange();
       onClose();
@@ -29,7 +27,7 @@ export default function ZonaManager({ zonas, onZonasChange }) {
   const handleDelete = async (id) => {
     if(!confirm("¿Seguro que deseas eliminar esta zona? Los equipos quedarán 'Sin Asignar'.")) return;
     try {
-      await axios.delete(`${API_URL}/zonas/${id}/`);
+      await axios.delete(`/zonas/${id}/`);
       onZonasChange();
     } catch (error) {
       console.error(error);

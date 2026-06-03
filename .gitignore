@@ -1,0 +1,20 @@
+# Entorno Virtual y Cache de Python
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/db.sqlite3
+
+# Variables de Entorno (¡IMPORTANTE NO SUBIR CONTRASEÑAS!)
+backend/.env
+
+# Node y React
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+.npm/
+
+# IDEs y SO
+.vscode/
+.idea/
+.DS_Store
+*.log

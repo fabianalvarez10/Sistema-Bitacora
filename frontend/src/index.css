@@ -8,8 +8,8 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #0f172a; /* Slate 900 for modern dark theme */
-  color: #f8fafc;
+  background-color: #f3f4f6; /* Gray 100 for light mode */
+  color: #111827; /* Gray 900 */
 }
 
 #root {
