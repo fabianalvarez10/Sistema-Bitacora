@@ -18,3 +18,10 @@ frontend/.env
 .idea/
 .DS_Store
 *.log
+
+# Archivos compilados e ignorados extras
+collector/build/
+collector/dist/
+*.exe
+__pycache__/
+*.pyc
