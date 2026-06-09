@@ -10,6 +10,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';
+import Swal from 'sweetalert2';
 import ZonaManager from '../components/ZonaManager';
 import '../App.css';
 
@@ -44,7 +45,7 @@ export default function Dashboard() {
       fetchZonas();
       setNewZoneData({ activeCategory: null, nombre: '' });
     } catch (error) {
-      alert("Error al crear la zona. Verifica que el nombre no esté repetido.");
+      Swal.fire('Error', 'Error al crear la zona. Verifica que el nombre no esté repetido.', 'error');
     }
   };
 
@@ -59,26 +60,41 @@ export default function Dashboard() {
 
   const handleEditZone = async (zona, e) => {
     e.stopPropagation();
-    const newName = window.prompt("Ingresa el nuevo nombre para esta zona:", zona.nombre);
+    const { value: newName } = await Swal.fire({
+      title: 'Editar Zona',
+      input: 'text',
+      inputLabel: 'Nuevo nombre',
+      inputValue: zona.nombre,
+      showCancelButton: true
+    });
     if(newName && newName.trim() !== "" && newName !== zona.nombre) {
       try {
          await axios.put(`/zonas/${zona.id}/`, { nombre: newName, categoria: zona.categoria });
          fetchZonas();
       } catch (err) {
-         alert("Error al actualizar la zona");
+         Swal.fire('Error', 'Error al actualizar la zona', 'error');
       }
     }
   };
 
   const handleDeleteZone = async (id, e) => {
     e.stopPropagation();
-    if(window.confirm("¿Seguro que quieres eliminar esta zona? Los equipos que estén adentro pasarán a estar 'No Asignados'.")) {
+    const result = await Swal.fire({
+      title: '¿Seguro que quieres eliminar esta zona?',
+      text: "Los equipos que estén adentro pasarán a estar 'No Asignados'.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar'
+    });
+    if(result.isConfirmed) {
       try {
          await axios.delete(`/zonas/${id}/`);
          fetchZonas();
          if (locationTab === id.toString()) setLocationTab('unassigned');
+         fetchComputers(locationTab);
       } catch (err) {
-         alert("Error al eliminar la zona");
+         Swal.fire('Error', 'Error al eliminar la zona', 'error');
       }
     }
   };
@@ -100,13 +116,21 @@ export default function Dashboard() {
 
   const handleDeleteComputer = async (id, e) => {
     e.stopPropagation();
-    if(window.confirm("¿Estás seguro de que quieres eliminar este equipo del sistema de forma permanente?")) {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: "Esta acción eliminará este equipo del sistema de forma permanente.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar'
+    });
+    if(result.isConfirmed) {
       try {
         await axios.delete(`/computers/${id}/`);
         fetchComputers(locationTab);
+        Swal.fire('Eliminado', 'El equipo ha sido eliminado.', 'success');
       } catch (error) {
-        console.error("Error al eliminar", error);
-        alert("Error al eliminar el equipo");
+        Swal.fire('Error', 'Error al eliminar el equipo', 'error');
       }
     }
   };
@@ -119,7 +143,7 @@ export default function Dashboard() {
     if (locationTab !== 'manage') {
       fetchComputers(locationTab);
     }
-  }, [locationTab, zonas]); // Re-fetch computers if zones change or tab changes
+  }, [locationTab, zonas]);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -129,27 +153,37 @@ export default function Dashboard() {
     formData.append('file', file);
 
     try {
-      await axios.post(`/upload-inventory/`, formData, {
+      const response = await axios.post(`/upload-inventory/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      alert('Inventario subido exitosamente! Lo encontrarás en "Sin Asignar".');
-      fetchComputers(locationTab);
+      if(response.status === 200) {
+        Swal.fire('¡Éxito!', 'Inventario subido exitosamente! Lo encontrarás en "Sin Asignar".', 'success');
+        fetchComputers(locationTab);
+      }
     } catch (error) {
       console.error("Error uploading file:", error);
-      alert('Error al subir el archivo.');
+      Swal.fire('Error', 'Error al subir el archivo.', 'error');
     }
-    e.target.value = null; // Reset input
+    e.target.value = null;
   };
 
   const handleAssignZone = async (computerId, newZonaId) => {
     try {
       await axios.patch(`/computers/${computerId}/zona/`, { zona_id: newZonaId === 'none' ? null : newZonaId });
       fetchComputers(locationTab);
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Equipo reasignado',
+        showConfirmButton: false,
+        timer: 3000
+      });
     } catch (error) {
       console.error("Error assigning zone:", error);
-      alert("Error al asignar zona.");
+      Swal.fire('Error', 'Error al asignar zona.', 'error');
     }
   };
 
@@ -289,8 +323,10 @@ Wi-Fi: ${wifis}`;
         "Alias": comp.alias || 'N/A',
         "ID (Hostname)": comp.hostname,
         "MAC Address": comp.mac_address,
-        "Zona": comp.zona_nombre || 'No Asignada',
+        "IP": comp.ip_address || "No disponible",
         "Procesador": comp.processor,
+        "Placa Madre": comp.motherboard || "Desconocida",
+        "BIOS": comp.bios_version || "Desconocida",
         "RAM (GB)": comp.ram_gb,
         "Almacenamiento (GB)": comp.storage_gb,
         "SO": comp.os_version,
@@ -310,95 +346,97 @@ Wi-Fi: ${wifis}`;
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto flex flex-col gap-6 md:gap-8">
-      {/* Header Area */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-br from-white to-orange-50 p-4 md:p-6 rounded-2xl shadow-sm border border-orange-100">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-            <Server className="text-orange-500" size={32} />
-            Inventario Hardware VPDS
-          </h1>
-          <p className="text-gray-500 mt-1">Sistema de gestión de recursos tecnológicos de la universidad</p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2 mt-2 lg:mt-0 w-full lg:w-auto">
-          <input 
-            type="file" 
-            accept=".json" 
-            ref={fileInputRef} 
-            onChange={handleFileUpload} 
-            className="hidden" 
-          />
-          {user?.role === 'ADMINISTRADOR' && (
+    <div className="w-full flex flex-col min-h-screen bg-[#F0F4F8] font-sans">
+      {/* Dark Navy Full-Width Header */}
+      <div className="bg-[#1E2B4D] w-full pt-8 pb-24 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <img src="/logo-ctsi.png" alt="CTSI Logo" className="h-20 w-auto object-contain" />
+            <div>
+              <h1 className="text-3xl font-bold text-white tracking-tight">
+                Inventario Hardware CTSI
+              </h1>
+              <p className="text-gray-300 mt-1 font-light text-sm md:text-base">Sistema de gestión de recursos tecnológicos de la universidad</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3 mt-2 lg:mt-0 w-full lg:w-auto">
+            <input 
+              type="file" 
+              accept=".json" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              className="hidden" 
+            />
+            {user?.role === 'ADMINISTRADOR' && (
+              <Button 
+                variant="flat" 
+                className="bg-white/10 text-white hover:bg-white/20 font-medium border border-white/10"
+                startContent={<Users size={18} />}
+                onClick={() => navigate('/users')}
+              >
+                Usuarios
+              </Button>
+            )}
+            {(user?.role === 'ADMINISTRADOR' || user?.role === 'TECNICO') && (
+              <Button 
+                className="bg-[#2E5BFF] text-white hover:bg-[#1C41D6] font-medium shadow-lg shadow-[#2E5BFF]/30 flex-1 lg:flex-none border border-[#2E5BFF]/50"
+                startContent={<Upload size={18} />}
+                onClick={() => fileInputRef.current.click()}
+              >
+                Importar Equipo
+              </Button>
+            )}
             <Button 
-              variant="flat" 
-              color="secondary" 
-              startContent={<Users size={18} />}
-              onClick={() => navigate('/users')}
-              className="font-medium"
+              isIconOnly 
+              variant="light" 
+              className="text-white hover:bg-white/10 ml-auto lg:ml-0" 
+              onClick={logout}
+              aria-label="Cerrar sesión"
             >
-              Usuarios
+              <LogOut size={20} />
             </Button>
-          )}
-          {(user?.role === 'ADMINISTRADOR' || user?.role === 'TECNICO') && (
-            <Button 
-              color="primary" 
-              startContent={<Upload size={18} />}
-              onClick={() => fileInputRef.current.click()}
-              className="font-medium shadow-md shadow-orange-500/20 flex-1 lg:flex-none"
-            >
-              Importar Equipo
-            </Button>
-          )}
-          <Button 
-            isIconOnly 
-            variant="light" 
-            color="danger" 
-            onClick={logout}
-            aria-label="Cerrar sesión"
-            className="ml-auto lg:ml-0"
-          >
-            <LogOut size={20} />
-          </Button>
+          </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardBody className="flex flex-row items-center gap-4 p-4">
-            <div className="p-3 bg-orange-100 rounded-lg text-orange-600"><Monitor size={24}/></div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Equipos Listados</p>
-              <p className="text-2xl font-bold text-gray-800">{computers.length}</p>
-            </div>
-          </CardBody>
-        </Card>
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardBody className="flex flex-row items-center gap-4 p-4">
-            <div className="p-3 bg-orange-100 rounded-lg text-orange-600"><LayoutDashboard size={24}/></div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Zonas Activas</p>
-              <p className="text-2xl font-bold text-gray-800">{zonas.length}</p>
-            </div>
-          </CardBody>
-        </Card>
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardBody className="flex flex-row items-center gap-4 p-4">
-            <div className="p-3 bg-orange-100 rounded-lg text-orange-600"><Server size={24}/></div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Vista Actual</p>
-              <p className="text-xl font-bold text-gray-800">
-                {locationTab === 'all' ? 'Todos los Equipos' : locationTab === 'unassigned' ? 'Equipos No Asignados' : (locationTab === 'manage' ? 'Gestión' : zonas.find(z => z.id.toString() === locationTab.toString())?.nombre || 'General')}
-              </p>
-            </div>
-          </CardBody>
-        </Card>
-      </div>
+      <div className="max-w-7xl mx-auto w-full px-4 md:px-8 flex flex-col gap-6 md:gap-8 -mt-14 relative z-10 pb-10">
+        {/* KPI Cards (Glassmorphism) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <Card className="bg-white/40 backdrop-blur-md border border-white/60 shadow-xl rounded-2xl">
+            <CardBody className="flex flex-row items-center gap-4 p-5">
+              <div className="p-3 bg-white/60 rounded-xl text-blue-700 shadow-sm"><Monitor size={24}/></div>
+              <div>
+                <p className="text-sm text-slate-700 font-semibold">Equipos Listados</p>
+                <p className="text-3xl font-bold text-slate-900 drop-shadow-sm">{computers.length}</p>
+              </div>
+            </CardBody>
+          </Card>
+          <Card className="bg-white/40 backdrop-blur-md border border-white/60 shadow-xl rounded-2xl">
+            <CardBody className="flex flex-row items-center gap-4 p-5">
+              <div className="p-3 bg-white/60 rounded-xl text-blue-700 shadow-sm"><LayoutDashboard size={24}/></div>
+              <div>
+                <p className="text-sm text-slate-700 font-semibold">Zonas Activas</p>
+                <p className="text-3xl font-bold text-slate-900 drop-shadow-sm">{zonas.length}</p>
+              </div>
+            </CardBody>
+          </Card>
+          <Card className="bg-white/40 backdrop-blur-md border border-white/60 shadow-xl rounded-2xl">
+            <CardBody className="flex flex-row items-center gap-4 p-5">
+              <div className="p-3 bg-white/60 rounded-xl text-blue-700 shadow-sm"><Server size={24}/></div>
+              <div>
+                <p className="text-sm text-slate-700 font-semibold">Vista Actual</p>
+                <p className="text-xl font-bold text-slate-900 drop-shadow-sm truncate max-w-[150px] sm:max-w-[200px]">
+                  {locationTab === 'all' ? 'Todos los Equipos' : locationTab === 'unassigned' ? 'Equipos No Asignados' : (locationTab === 'manage' ? 'Gestión' : zonas.find(z => z.id.toString() === locationTab.toString())?.nombre || 'General')}
+                </p>
+              </div>
+            </CardBody>
+          </Card>
+        </div>
 
-      {/* Main Content Area */}
-      <Card className="bg-white border border-gray-200 shadow-sm min-h-[500px]">
-        <CardBody className="p-0 flex flex-col md:flex-row">
+        {/* Main Content Area */}
+        <Card className="bg-white border border-gray-200 shadow-lg min-h-[500px] rounded-2xl overflow-hidden">
+          <CardBody className="p-0 flex flex-col md:flex-row">
           
           {/* Mobile Sidebar Toggle */}
           <div className="md:hidden p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
@@ -409,13 +447,12 @@ Wi-Fi: ${wifis}`;
           </div>
 
           {/* Vertical Sidebar / Categories */}
-          <div className={`md:w-64 border-b md:border-b-0 md:border-r border-gray-200 bg-gray-50/50 p-4 flex-col shrink-0 overflow-y-auto ${isSidebarOpen ? 'flex' : 'hidden md:flex'}`}>
-            <h3 className="hidden md:block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Navegación</h3>
+          <div className={`md:w-64 border-b md:border-b-0 md:border-r border-gray-200 bg-[#F8FAFC] p-4 flex-col shrink-0 overflow-y-auto ${isSidebarOpen ? 'flex' : 'hidden md:flex'}`}>
+            <h3 className="hidden md:block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2">Navegación</h3>
             
             <Button 
               variant={locationTab === 'all' ? "flat" : "light"} 
-              color="primary" 
-              className="justify-start w-full mb-1 font-medium"
+              className={`justify-start w-full mb-1 font-medium ${locationTab === 'all' ? 'bg-blue-50 text-[#2E5BFF]' : 'text-slate-600 hover:bg-slate-100'}`}
               onClick={() => setLocationTab('all')}
             >
               <Server size={18} /> Todos los Equipos
@@ -423,8 +460,7 @@ Wi-Fi: ${wifis}`;
             
             <Button 
               variant={locationTab === 'unassigned' ? "flat" : "light"} 
-              color="primary" 
-              className="justify-start w-full mb-2 font-medium"
+              className={`justify-start w-full mb-2 font-medium ${locationTab === 'unassigned' ? 'bg-blue-50 text-[#2E5BFF]' : 'text-slate-600 hover:bg-slate-100'}`}
               onClick={() => setLocationTab('unassigned')}
             >
               <LayoutDashboard size={18} /> Equipos No Asignados
@@ -439,8 +475,7 @@ Wi-Fi: ${wifis}`;
                     <div key={zona.id} className="relative group w-full flex items-center">
                       <Button 
                         variant={locationTab === zona.id.toString() ? "flat" : "light"} 
-                        color="primary" 
-                        className="justify-start flex-1 text-sm pr-12"
+                        className={`justify-start flex-1 text-sm pr-12 font-medium ${locationTab === zona.id.toString() ? 'bg-blue-50 text-[#2E5BFF]' : 'text-slate-600 hover:bg-slate-100'}`}
                         size="sm"
                         onClick={() => setLocationTab(zona.id.toString())}
                       >
@@ -483,8 +518,7 @@ Wi-Fi: ${wifis}`;
                     <div key={zona.id} className="relative group w-full flex items-center">
                       <Button 
                         variant={locationTab === zona.id.toString() ? "flat" : "light"} 
-                        color="primary" 
-                        className="justify-start flex-1 text-sm pr-12"
+                        className={`justify-start flex-1 text-sm pr-12 font-medium ${locationTab === zona.id.toString() ? 'bg-blue-50 text-[#2E5BFF]' : 'text-slate-600 hover:bg-slate-100'}`}
                         size="sm"
                         onClick={() => setLocationTab(zona.id.toString())}
                       >
@@ -528,8 +562,7 @@ Wi-Fi: ${wifis}`;
                       <Button 
                         key={zona.id} 
                         variant={locationTab === zona.id.toString() ? "flat" : "light"} 
-                        color="primary" 
-                        className="justify-start w-full text-sm"
+                        className={`justify-start w-full text-sm font-medium ${locationTab === zona.id.toString() ? 'bg-blue-50 text-[#2E5BFF]' : 'text-slate-600 hover:bg-slate-100'}`}
                         size="sm"
                         onClick={() => setLocationTab(zona.id.toString())}
                       >
@@ -619,7 +652,7 @@ Wi-Fi: ${wifis}`;
                 {filteredComputers.length === 0 ? (
                   <div className="text-center text-gray-500 py-12 md:py-16 flex flex-col items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200 mx-2 md:mx-0">
                     <div className="p-4 bg-white rounded-full shadow-sm mb-4">
-                      <Search size={48} className="text-orange-300" />
+                      <Search size={48} className="text-blue-300" />
                     </div>
                     <h3 className="text-base md:text-lg font-semibold text-gray-700">No se encontraron equipos</h3>
                     <p className="text-xs md:text-sm text-gray-400 mt-1 max-w-sm px-4">
@@ -648,7 +681,7 @@ Wi-Fi: ${wifis}`;
                                   </span>
                                 ) : (
                                   <span className="relative flex h-2.5 w-2.5" title="Todo en orden">
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#4ADE80]"></span>
                                   </span>
                                 )}
                                 <span className="font-bold text-lg">{comp.alias || comp.hostname}</span>
@@ -660,21 +693,19 @@ Wi-Fi: ${wifis}`;
                               )}
                             </div>
                             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
-                              <Chip size="sm" variant="flat" color={comp.zona_nombre ? "primary" : "warning"} className="mr-auto sm:mr-0">
+                              <div className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-md font-medium mr-auto sm:mr-0">
                                 {comp.zona_nombre || "Equipo No Asignado"}
-                              </Chip>
+                              </div>
                               <Button 
                                 size="sm" 
-                                color="primary" 
-                                variant="flat"
+                                className="bg-slate-100 text-slate-700 font-medium hover:bg-slate-200"
                                 onClick={(e) => handleOpenAudit(comp, e)}
                               >
                                 Revisión
                               </Button>
                               <Button 
                                 isIconOnly 
-                                color="secondary" 
-                                variant="flat" 
+                                className="bg-[#E0E7FF] text-[#4F46E5] hover:bg-[#C7D2FE]" 
                                 size="sm"
                                 aria-label="Generar QR"
                                 onClick={(e) => handleGenerateQR(comp, e)}
@@ -683,8 +714,7 @@ Wi-Fi: ${wifis}`;
                               </Button>
                               <Button 
                                 isIconOnly 
-                                color="danger" 
-                                variant="flat" 
+                                className="bg-[#F87171] text-white hover:bg-red-500 shadow-sm" 
                                 size="sm"
                                 aria-label="Eliminar"
                                 onClick={(e) => handleDeleteComputer(comp.id, e)}
@@ -695,14 +725,14 @@ Wi-Fi: ${wifis}`;
                           </div>
                         }
                       >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4 border-t border-gray-200">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 pt-4 border-t border-gray-200">
                           <div className="flex flex-col gap-1">
-                            <span className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-2"><div className="p-1 bg-orange-100 text-orange-600 rounded"><Cpu size={14}/></div> Procesador</span>
+                            <span className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-2"><div className="p-1 bg-blue-100 text-blue-600 rounded"><Cpu size={14}/></div> Procesador</span>
                             <span className="text-sm font-medium">{comp.processor}</span>
                           </div>
 
                           <div className="flex flex-col gap-1">
-                            <span className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-2"><div className="p-1 bg-orange-100 text-orange-600 rounded"><MemoryStick size={14}/></div> Memoria RAM</span>
+                            <span className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-2"><div className="p-1 bg-blue-100 text-blue-600 rounded"><MemoryStick size={14}/></div> Memoria RAM</span>
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium">{comp.ram_gb} GB</span>
                               <Chip size="sm" color="default" variant="bordered" className="text-xs border-gray-300">{comp.tipo_ram}</Chip>
@@ -710,7 +740,7 @@ Wi-Fi: ${wifis}`;
                           </div>
 
                           <div className="flex flex-col gap-1">
-                            <span className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-2"><div className="p-1 bg-orange-100 text-orange-600 rounded"><HardDrive size={14}/></div> Almacenamiento</span>
+                            <span className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-2"><div className="p-1 bg-blue-100 text-blue-600 rounded"><HardDrive size={14}/></div> Almacenamiento</span>
                             {comp.discos_detalle && comp.discos_detalle.length > 0 ? (
                               <div className="flex flex-col gap-2 mt-1">
                                 <span className="text-xs text-gray-400">{comp.discos_detalle.length} {comp.discos_detalle.length === 1 ? 'Disco Instalado' : 'Discos Instalados'} (Total: {comp.storage_gb} GB)</span>
@@ -735,7 +765,15 @@ Wi-Fi: ${wifis}`;
                           </div>
 
                           <div className="flex flex-col gap-1">
-                            <span className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-2"><div className="p-1 bg-orange-100 text-orange-600 rounded"><Settings size={14}/></div> Asignar a Zona</span>
+                            <span className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-2"><div className="p-1 bg-blue-100 text-blue-600 rounded"><Server size={14}/></div> Placa Madre / BIOS</span>
+                            <div className="flex flex-col gap-1 mt-1">
+                              <span className="text-sm font-medium">{comp.motherboard || 'Desconocida'}</span>
+                              <span className="text-xs text-gray-400">BIOS: {comp.bios_version || 'Desconocida'}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs text-gray-500 font-semibold uppercase flex items-center gap-2"><div className="p-1 bg-blue-100 text-blue-600 rounded"><Settings size={14}/></div> Asignar a Zona</span>
                             <Select 
                               size="sm"
                               placeholder="Seleccionar zona" 
@@ -763,6 +801,7 @@ Wi-Fi: ${wifis}`;
           </div>
         </CardBody>
       </Card>
+      </div>
 
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
         <ModalContent className="bg-white border border-gray-200">

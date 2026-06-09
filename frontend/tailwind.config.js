@@ -17,10 +17,10 @@ export default {
         light: {
           colors: {
             primary: {
-              DEFAULT: "#f97316",
+              DEFAULT: "#2563eb",
               foreground: "#ffffff",
             },
-            focus: "#f97316",
+            focus: "#2563eb",
           },
         },
       },

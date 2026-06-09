@@ -198,6 +198,8 @@ class UploadInventory(APIView):
                 defaults={
                     'alias': data.get('alias', None),
                     'os_version': data.get('os_version', ''),
+                    'motherboard': data.get('motherboard', ''),
+                    'bios_version': data.get('bios_version', ''),
                     'mac_address': data.get('mac_address', ''),
                     'processor': data.get('processor', ''),
                     'ram_gb': data.get('ram_gb', 0.0),

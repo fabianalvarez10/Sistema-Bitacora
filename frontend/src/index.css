@@ -5,10 +5,10 @@
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  place-items: flex-start;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f3f4f6; /* Gray 100 for light mode */
+  background-color: #F0F4F8; /* Light Gray Base */
   color: #111827; /* Gray 900 */
 }
 

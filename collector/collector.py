@@ -6,6 +6,14 @@ import uuid
 from datetime import datetime
 import os
 import winreg
+import ctypes
+import sys
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
 
 def get_install_date(c):
     try:
@@ -136,8 +144,8 @@ def collect_data():
         if mem_info:
             smbios_type = mem_info[0].SMBIOSMemoryType
             tipo_ram = ram_types.get(int(smbios_type), f"Tipo {smbios_type}")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error obteniendo tipo de RAM: {e}")
 
     tipo_disco = "Desconocido (OS Legacy)"
     discos_detalle = []
@@ -159,8 +167,8 @@ def collect_data():
                     "capacidad_gb": size_gb,
                     "tipo": f"{media_t}-{bus_t}"
                 })
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error obteniendo detalles del disco: {e}")
 
     try:
         total_disk_bytes = sum(int(disk.Size) for disk in c.Win32_DiskDrive() if disk.Size)
@@ -174,6 +182,26 @@ def collect_data():
     mac = get_mac_address()
     location = None
     
+    motherboard = "Desconocida"
+    try:
+        board_info = c.Win32_BaseBoard()
+        if board_info:
+            manufacturer = board_info[0].Manufacturer if board_info[0].Manufacturer else ""
+            product = board_info[0].Product if board_info[0].Product else ""
+            motherboard = f"{manufacturer} {product}".strip()
+    except Exception as e:
+        print(f"Error obteniendo placa madre: {e}")
+
+    bios_version = "Desconocida"
+    try:
+        bios_info = c.Win32_BIOS()
+        if bios_info:
+            bios_manufacturer = bios_info[0].Manufacturer if bios_info[0].Manufacturer else ""
+            bios_smbios = bios_info[0].SMBIOSBIOSVersion if bios_info[0].SMBIOSBIOSVersion else ""
+            bios_version = f"{bios_manufacturer} {bios_smbios}".strip()
+    except Exception as e:
+        print(f"Error obteniendo BIOS: {e}")
+    
     print("Recolectando hardware adicional...")
     hardware_extra = get_extra_hardware(c)
     
@@ -184,6 +212,8 @@ def collect_data():
         "hostname": hostname,
         "alias": alias if alias else None,
         "os_version": os_version,
+        "motherboard": motherboard,
+        "bios_version": bios_version,
         "mac_address": mac,
         "processor": processor,
         "ram_gb": ram_gb,
@@ -205,4 +235,8 @@ def collect_data():
     print(f"Archivo generado: {output_filename}")
 
 if __name__ == "__main__":
+    if not is_admin():
+        print("Solicitando privilegios de Administrador...")
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+        sys.exit()
     collect_data()

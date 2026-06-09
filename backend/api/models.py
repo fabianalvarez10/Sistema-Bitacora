@@ -30,6 +30,8 @@ class Computer(models.Model):
     hostname = models.CharField(max_length=255, unique=True)
     alias = models.CharField(max_length=255, blank=True, null=True)
     os_version = models.CharField(max_length=255, blank=True, null=True)
+    motherboard = models.CharField(max_length=255, blank=True, null=True)
+    bios_version = models.CharField(max_length=255, blank=True, null=True)
     mac_address = models.CharField(max_length=255)
     processor = models.CharField(max_length=255)
     ram_gb = models.FloatField()

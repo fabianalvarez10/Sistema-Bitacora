@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@nextui-org/react';
 import { Plus, Trash2, Edit } from 'lucide-react';
+import Swal from 'sweetalert2';
 import axios from '../api/axios';
 
 export default function ZonaManager({ zonas, onZonasChange }) {
@@ -20,18 +21,28 @@ export default function ZonaManager({ zonas, onZonasChange }) {
       onClose();
     } catch (error) {
       console.error(error);
-      alert('Error guardando zona');
+      Swal.fire('Error', 'Error guardando zona', 'error');
     }
   };
 
   const handleDelete = async (id) => {
-    if(!confirm("¿Seguro que deseas eliminar esta zona? Los equipos quedarán 'Sin Asignar'.")) return;
+    const result = await Swal.fire({
+      title: '¿Seguro que deseas eliminar esta zona?',
+      text: "Los equipos quedarán 'Sin Asignar'.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+    if(!result.isConfirmed) return;
     try {
       await axios.delete(`/zonas/${id}/`);
       onZonasChange();
     } catch (error) {
       console.error(error);
-      alert('Error eliminando zona');
+      Swal.fire('Error', 'Error eliminando zona', 'error');
     }
   };
 

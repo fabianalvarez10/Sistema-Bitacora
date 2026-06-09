@@ -7,7 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_active']
 
 class UserCreateSerializer(serializers.ModelSerializer):
     role = serializers.ChoiceField(choices=UserProfile.ROLES, write_only=True)

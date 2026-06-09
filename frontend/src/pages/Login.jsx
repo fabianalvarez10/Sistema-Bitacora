@@ -25,14 +25,20 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md bg-white border border-gray-200 shadow-xl">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative"
+      style={{ backgroundImage: "url('/bg-login.png')" }}
+    >
+      {/* Overlay oscuro para mejorar la legibilidad sobre la imagen */}
+      <div className="absolute inset-0 bg-[#0B1120]/40 z-0"></div>
+
+      <Card className="w-full max-w-md bg-white/95 border border-white/20 shadow-2xl relative z-10">
         <CardBody className="p-8">
           <div className="flex flex-col items-center mb-8">
-            <div className="p-4 bg-orange-100 rounded-full mb-4">
-              <Server size={40} className="text-orange-500" />
+            <div className="mb-4 flex justify-center w-full">
+              <img src="/logo-ctsi.png" alt="CTSI Logo" className="h-20 w-auto object-contain drop-shadow-sm" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-800">CTSI Inventario</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Inicio de Sesión</h1>
             <p className="text-gray-500 text-sm mt-1">Ingresa tus credenciales para acceder</p>
           </div>
 
@@ -62,8 +68,7 @@ export default function Login() {
 
             <Button 
               type="submit" 
-              color="primary" 
-              className="w-full mt-4 font-bold shadow-md shadow-orange-500/20"
+              className="w-full mt-4 font-bold shadow-md shadow-[#2E5BFF]/30 bg-[#2E5BFF] text-white hover:bg-[#1C41D6]"
               isLoading={isLoading}
             >
               Iniciar Sesión
