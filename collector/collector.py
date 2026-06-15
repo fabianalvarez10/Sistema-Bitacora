@@ -5,9 +5,11 @@ import json
 import uuid
 from datetime import datetime
 import os
+import os
 import winreg
 import ctypes
 import sys
+from fpdf import FPDF
 
 def is_admin():
     try:
@@ -23,6 +25,66 @@ def get_install_date(c):
         return dt.strftime('%Y-%m-%d')
     except Exception as e:
         return str(e)
+
+def generar_pdf(data, pdf_filename):
+    try:
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("helvetica", 'B', 16)
+        pdf.cell(0, 10, "Reporte Tecnico de Equipo - CTSI", align="C", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(10)
+        
+        pdf.set_font("helvetica", 'B', 12)
+        pdf.cell(0, 10, "Informacion Basica", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("helvetica", '', 10)
+        pdf.cell(0, 8, f"Hostname: {data.get('hostname')}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Alias: {data.get('alias', 'N/A')}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Sistema Operativo: {data.get('os_version')}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Fecha de Instalacion SO: {data.get('install_date')}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Direccion MAC: {data.get('mac_address')}", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(5)
+        
+        pdf.set_font("helvetica", 'B', 12)
+        pdf.cell(0, 10, "Hardware Principal", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("helvetica", '', 10)
+        pdf.cell(0, 8, f"Procesador: {data.get('processor')}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"RAM: {data.get('ram_gb')} GB - {data.get('tipo_ram')}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Placa Madre: {data.get('motherboard')}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, f"Version de BIOS: {data.get('bios_version')}", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(5)
+        
+        pdf.set_font("helvetica", 'B', 12)
+        pdf.cell(0, 10, "Almacenamiento", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("helvetica", '', 10)
+        pdf.cell(0, 8, f"Almacenamiento Total: {data.get('storage_gb')} GB", new_x="LMARGIN", new_y="NEXT")
+        for disco in data.get('discos_detalle', []):
+            # Clean string encoding problems by converting to ascii and ignoring errors
+            m_str = str(disco.get('modelo')).encode('ascii', 'ignore').decode('ascii')
+            pdf.cell(0, 8, f"  - {m_str} | {disco.get('capacidad_gb')} GB | {disco.get('tipo')}", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(5)
+        
+        if data.get('hardware_extra'):
+            pdf.set_font("helvetica", 'B', 12)
+            pdf.cell(0, 10, "Hardware Adicional", new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font("helvetica", '', 10)
+            for hw in data.get('hardware_extra', []):
+                h_name = str(hw.get('nombre')).encode('ascii', 'ignore').decode('ascii')
+                h_type = str(hw.get('tipo')).encode('ascii', 'ignore').decode('ascii')
+                pdf.cell(0, 8, f"  - {h_type}: {h_name}", new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(5)
+            
+        pdf.set_font("helvetica", 'B', 12)
+        pdf.cell(0, 10, "Software Instalado", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("helvetica", '', 9)
+        for prog in data.get('programas', []):
+            p_name = str(prog.get('nombre', '')).encode('ascii', 'ignore').decode('ascii')
+            p_ver = str(prog.get('version', '')).encode('ascii', 'ignore').decode('ascii')
+            pdf.cell(0, 6, f"- {p_name} (v. {p_ver})", new_x="LMARGIN", new_y="NEXT")
+            
+        pdf.output(pdf_filename)
+        print(f"Archivo PDF generado: {pdf_filename}")
+    except Exception as e:
+        print(f"Error al generar el PDF: {e}")
 
 def get_mac_address():
     mac_node = uuid.getnode()
@@ -231,8 +293,12 @@ def collect_data():
     with open(output_filename, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
+    pdf_filename = f"{hostname}_inventory.pdf"
+    print("Generando reporte PDF...")
+    generar_pdf(data, pdf_filename)
+
     print(f"\nDatos recolectados exitosamente.")
-    print(f"Archivo generado: {output_filename}")
+    print(f"Archivo JSON generado: {output_filename}")
 
 if __name__ == "__main__":
     if not is_admin():

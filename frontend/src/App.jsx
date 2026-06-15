@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -14,23 +15,45 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 };
 
 function AppRoutes() {
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => setIsOffline(false);
+
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []);
+
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/users" element={
-        <ProtectedRoute allowedRoles={['ADMINISTRADOR']}>
-          <UserManagement />
-        </ProtectedRoute>
-      } />
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+    <>
+      {isOffline && (
+        <div style={{ backgroundColor: '#ef4444', color: 'white', textAlign: 'center', padding: '8px', position: 'fixed', top: 0, left: 0, width: '100%', zIndex: 9999, fontWeight: 'bold' }}>
+          ⚠️ Estás en modo sin conexión. La aplicación y tus cambios locales se guardarán para sincronizarse luego.
+        </div>
+      )}
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/users" element={
+          <ProtectedRoute allowedRoles={['ADMINISTRADOR']}>
+            <UserManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </>
   );
 }
 
