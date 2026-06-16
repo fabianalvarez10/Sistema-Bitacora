@@ -46,7 +46,6 @@ export default function Login() {
             <Input
               type="text"
               label="Usuario"
-              placeholder="Ej. admin"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               startContent={<UserIcon size={18} className="text-gray-400" />}
