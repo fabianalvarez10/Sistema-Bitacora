@@ -348,7 +348,7 @@ Wi-Fi: ${wifis}`;
   return (
     <div className="w-full flex flex-col min-h-screen bg-[#F0F4F8] font-sans">
       {/* Dark Navy Full-Width Header */}
-      <div className="bg-[#1E2B4D] w-full pt-8 pb-24 px-4 md:px-8">
+      <div className="bg-[#2A4072] w-full pt-8 pb-24 px-4 md:px-8">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div className="flex items-center gap-4">
             <img src="/logo-ctsi.png" alt="CTSI Logo" className="h-20 w-auto object-contain" />
