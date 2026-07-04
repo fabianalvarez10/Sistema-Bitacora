@@ -169,22 +169,8 @@ export default function Dashboard() {
     e.target.value = null;
   };
 
-  const handleDownloadCollector = async () => {
-    try {
-      const response = await axios.get('/download-collector/', {
-        responseType: 'blob'
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'collector.exe');
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-    } catch (error) {
-      console.error("Error downloading collector:", error);
-      Swal.fire('Error', 'No se pudo descargar el recolector. Verifica que esté compilado en el servidor.', 'error');
-    }
+  const handleDownloadCollector = () => {
+    window.open('https://drive.google.com/uc?export=download&id=1Yi8xb9H2RZY1_-pBSg_Iv15FCSePycTe', '_blank');
   };
 
   const handleAssignZone = async (computerId, newZonaId) => {
