@@ -169,6 +169,24 @@ export default function Dashboard() {
     e.target.value = null;
   };
 
+  const handleDownloadCollector = async () => {
+    try {
+      const response = await axios.get('/download-collector/', {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'collector.exe');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error("Error downloading collector:", error);
+      Swal.fire('Error', 'No se pudo descargar el recolector. Verifica que esté compilado en el servidor.', 'error');
+    }
+  };
+
   const handleAssignZone = async (computerId, newZonaId) => {
     try {
       await axios.patch(`/computers/${computerId}/zona/`, { zona_id: newZonaId === 'none' ? null : newZonaId });
@@ -379,13 +397,23 @@ Wi-Fi: ${wifis}`;
               </Button>
             )}
             {(user?.role === 'ADMINISTRADOR' || user?.role === 'TECNICO') && (
-              <Button 
-                className="bg-[#2E5BFF] text-white hover:bg-[#1C41D6] font-medium shadow-lg shadow-[#2E5BFF]/30 flex-1 lg:flex-none border border-[#2E5BFF]/50"
-                startContent={<Upload size={18} />}
-                onClick={() => fileInputRef.current.click()}
-              >
-                Importar Equipo
-              </Button>
+              <>
+                <Button 
+                  variant="flat" 
+                  className="bg-white/10 text-white hover:bg-white/20 font-medium border border-white/10"
+                  startContent={<Download size={18} />}
+                  onClick={handleDownloadCollector}
+                >
+                  Descargar Recolector
+                </Button>
+                <Button 
+                  className="bg-[#2E5BFF] text-white hover:bg-[#1C41D6] font-medium shadow-lg shadow-[#2E5BFF]/30 flex-1 lg:flex-none border border-[#2E5BFF]/50"
+                  startContent={<Upload size={18} />}
+                  onClick={() => fileInputRef.current.click()}
+                >
+                  Importar Equipo
+                </Button>
+              </>
             )}
             <Button 
               isIconOnly 

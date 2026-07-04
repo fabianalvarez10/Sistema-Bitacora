@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import ComputerList, UploadInventory, ZonaViewSet, ComputerUpdateZone, ComputerDelete, UserViewSet, CurrentUserView, PasswordResetRequestView, PasswordResetConfirmView
+from .views import ComputerList, UploadInventory, ZonaViewSet, ComputerUpdateZone, ComputerDelete, UserViewSet, CurrentUserView, PasswordResetRequestView, PasswordResetConfirmView, DownloadCollectorView
 
 router = DefaultRouter()
 router.register(r'zonas', ZonaViewSet)
@@ -18,4 +18,5 @@ urlpatterns = [
     path('computers/<int:pk>/', ComputerDelete.as_view(), name='computer-delete'),
     path('computers/<int:pk>/zona/', ComputerUpdateZone.as_view(), name='computer-update-zone'),
     path('upload-inventory/', UploadInventory.as_view(), name='upload-inventory'),
+    path('download-collector/', DownloadCollectorView.as_view(), name='download-collector'),
 ]

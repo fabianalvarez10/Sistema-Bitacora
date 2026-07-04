@@ -3,6 +3,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.http import FileResponse
 from rest_framework.permissions import IsAuthenticated, BasePermission
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
@@ -179,6 +180,16 @@ class UploadInventory(APIView):
                     if op and op not in new_prog_names:
                         alertas_remocion["programas"].append(op)
                         
+                old_ram = float(existing_computer.ram_gb) if existing_computer.ram_gb else 0.0
+                new_ram = float(data.get('ram_gb', 0.0))
+                if old_ram > 0 and new_ram < old_ram:
+                    alertas_remocion["hardware"].append(f"RAM reducida de {old_ram}GB a {new_ram}GB")
+                    
+                old_proc = existing_computer.processor
+                new_proc = data.get('processor', '')
+                if old_proc and new_proc and old_proc != new_proc:
+                    alertas_remocion["hardware"].append(f"Procesador cambiado. Era: {old_proc}")
+                        
                 old_alertas = existing_computer.alertas_remocion or {"programas": [], "hardware": [], "discos": []}
                 import datetime
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -223,5 +234,21 @@ class UploadInventory(APIView):
             
         except json.JSONDecodeError:
             return Response({"error": "Invalid JSON file"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class DownloadCollectorView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            file_path = os.path.join(settings.BASE_DIR, '..', 'collector', 'dist', 'collector.exe')
+            file_path = os.path.normpath(file_path)
+            
+            if os.path.exists(file_path):
+                response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename='collector.exe')
+                return response
+            else:
+                return Response({"error": "El archivo recolector no se encuentra en el servidor."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
