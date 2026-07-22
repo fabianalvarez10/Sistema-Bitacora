@@ -18,7 +18,11 @@ export default function Login() {
     try {
       await login(username, password);
     } catch (err) {
-      setError('Credenciales incorrectas. Inténtalo de nuevo.');
+      if (!err.response) {
+        setError('Error de red: El servidor está apagado o tardando en responder. Intenta de nuevo en unos segundos.');
+      } else {
+        setError('Credenciales incorrectas. Inténtalo de nuevo.');
+      }
     } finally {
       setIsLoading(false);
     }
