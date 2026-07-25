@@ -372,6 +372,16 @@ Wi-Fi: ${wifis}`;
               onChange={handleFileUpload} 
               className="hidden" 
             />
+            <Button 
+              as="a"
+              href="/collector.exe"
+              download
+              variant="flat" 
+              className="bg-[#00B4D8]/20 text-[#00B4D8] hover:bg-[#00B4D8]/30 font-medium border border-[#00B4D8]/50"
+              startContent={<Download size={18} />}
+            >
+              Descargar Recolector
+            </Button>
             {user?.role === 'ADMINISTRADOR' && (
               <Button 
                 variant="flat" 
