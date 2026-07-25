@@ -171,10 +171,20 @@ def get_extra_hardware(c):
         for n in c.Win32_NetworkAdapter():
             name_str = str(n.Name)
             if 'Wi-Fi' in name_str or 'Wireless' in name_str or '802.11' in name_str:
-                hw.append({"tipo": "Red Inalámbrica (Wi-Fi)", "modelo": name_str})
+                if 'Virtual' not in name_str and 'Bluetooth' not in name_str:
+                    hw.append({"tipo": "Red Inalámbrica (Wi-Fi)", "modelo": name_str})
             elif 'Ethernet' in name_str or 'Gigabit' in name_str or 'PCIe' in name_str or 'GbE' in name_str:
                 if 'Virtual' not in name_str and 'VMware' not in name_str and 'Bluetooth' not in name_str:
                     hw.append({"tipo": "Red Cableada (Ethernet)", "modelo": name_str})
+    except: pass
+    
+    try:
+        for mem in c.Win32_PhysicalMemory():
+            if mem.Capacity:
+                size_gb = round(int(mem.Capacity) / (1024.0 ** 3), 2)
+                manufacturer = mem.Manufacturer.strip() if mem.Manufacturer else "Desconocido"
+                part_number = mem.PartNumber.strip() if mem.PartNumber else "Desconocido"
+                hw.append({"tipo": "Módulo RAM", "modelo": f"{size_gb}GB {manufacturer} {part_number}"})
     except: pass
     
     return hw
