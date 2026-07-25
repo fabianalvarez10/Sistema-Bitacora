@@ -394,14 +394,7 @@ Wi-Fi: ${wifis}`;
             )}
             {(user?.role === 'ADMINISTRADOR' || user?.role === 'TECNICO') && (
               <>
-                <Button 
-                  variant="flat" 
-                  className="bg-white/10 text-white hover:bg-white/20 font-medium border border-white/10"
-                  startContent={<Download size={18} />}
-                  onClick={handleDownloadCollector}
-                >
-                  Descargar Recolector
-                </Button>
+
                 <Button 
                   className="bg-[#2E5BFF] text-white hover:bg-[#1C41D6] font-medium shadow-lg shadow-[#2E5BFF]/30 flex-1 lg:flex-none border border-[#2E5BFF]/50"
                   startContent={<Upload size={18} />}
