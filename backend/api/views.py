@@ -190,15 +190,19 @@ class UploadInventory(APIView):
                 if old_proc and new_proc and old_proc != new_proc:
                     alertas_remocion["hardware"].append(f"Procesador cambiado. Era: {old_proc}")
                         
-                old_alertas = existing_computer.alertas_remocion or {"programas": [], "hardware": [], "discos": []}
+                import copy
+                old_alertas = copy.deepcopy(existing_computer.alertas_remocion) if existing_computer.alertas_remocion else {"programas": [], "hardware": [], "discos": []}
                 import datetime
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
                 for key in ["programas", "hardware", "discos"]:
+                    # Asegurar que existan las claves
+                    if key not in old_alertas:
+                        old_alertas[key] = []
                     for item in alertas_remocion[key]:
                         already_alerted = any(a.get("elemento") == item for a in old_alertas.get(key, []))
                         if not already_alerted:
-                            old_alertas.setdefault(key, []).append({"elemento": item, "fecha_detectado": timestamp})
+                            old_alertas[key].append({"elemento": item, "fecha_detectado": timestamp})
                 
                 alertas_remocion = old_alertas
             else:
