@@ -150,6 +150,18 @@ class ComputerUpdateZone(generics.UpdateAPIView):
         serializer = self.get_serializer(computer)
         return Response(serializer.data)
 
+class ComputerClearAlerts(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, pk):
+        try:
+            computer = Computer.objects.get(pk=pk)
+            computer.alertas_remocion = {"programas": [], "hardware": [], "discos": []}
+            computer.save()
+            return Response({"message": "Alertas descartadas exitosamente."})
+        except Computer.DoesNotExist:
+            return Response({"error": "Computadora no encontrada."}, status=status.HTTP_404_NOT_FOUND)
+
 class UploadInventory(APIView):
     parser_classes = (MultiPartParser, FormParser)
     permission_classes = [IsAuthenticated]

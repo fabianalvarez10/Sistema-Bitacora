@@ -741,7 +741,11 @@ Wi-Fi: ${wifis}`;
                               </div>
                               <Button 
                                 size="sm" 
-                                className="bg-slate-100 text-slate-700 font-medium hover:bg-slate-200"
+                                className={`font-medium shadow-sm border ${
+                                  (comp.alertas_remocion?.programas?.length > 0 || comp.alertas_remocion?.hardware?.length > 0 || comp.alertas_remocion?.discos?.length > 0)
+                                    ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent"
+                                }`}
                                 onClick={(e) => handleOpenAudit(comp, e)}
                               >
                                 Revisión
@@ -951,21 +955,43 @@ Wi-Fi: ${wifis}`;
                         const alertas = selectedAuditComputer?.alertas_remocion?.[tipo] || [];
                         if (alertas.length === 0) return null;
                         return (
-                          <div key={tipo} className="p-4 bg-danger/10 border border-danger/30 rounded-lg">
-                            <h4 className="text-danger font-semibold uppercase text-sm mb-2">{tipo} Removidos</h4>
-                            <ul className="list-disc list-inside text-sm text-slate-300">
+                          <div key={tipo} className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <h4 className="text-red-700 font-semibold uppercase text-sm mb-2">{tipo} Removidos</h4>
+                            <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
                               {alertas.map((a, i) => (
-                                <li key={i}><span className="font-medium text-slate-200">{a.elemento}</span> <span className="text-xs text-slate-500">(Detectado el: {a.fecha_detectado})</span></li>
+                                <li key={i}><span className="font-medium">{a.elemento}</span> <span className="text-xs text-gray-500">(Detectado el: {a.fecha_detectado})</span></li>
                               ))}
                             </ul>
                           </div>
                         )
                       })}
                       {(!selectedAuditComputer?.alertas_remocion?.programas?.length && !selectedAuditComputer?.alertas_remocion?.hardware?.length && !selectedAuditComputer?.alertas_remocion?.discos?.length) && (
-                        <div className="p-4 text-center text-slate-400 bg-slate-800 rounded-lg border border-slate-700">
+                        <div className="p-4 text-center text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
                           No se han detectado componentes o programas removidos en este equipo.
                         </div>
                       )}
+                    </div>
+                    {/* Botón de descartar alertas */}
+                    {(selectedAuditComputer?.alertas_remocion?.programas?.length > 0 || selectedAuditComputer?.alertas_remocion?.hardware?.length > 0 || selectedAuditComputer?.alertas_remocion?.discos?.length > 0) && (
+                      <div className="mt-6 flex justify-end">
+                        <Button 
+                          color="danger" 
+                          variant="flat" 
+                          onPress={async () => {
+                            try {
+                              await api.post(`/computers/${selectedAuditComputer.id}/clear-alerts/`);
+                              onAuditOpenChange(false);
+                              fetchComputers(locationTab);
+                              Swal.fire('¡Éxito!', 'Las alertas han sido descartadas.', 'success');
+                            } catch (e) {
+                              Swal.fire('Error', 'No se pudieron descartar las alertas.', 'error');
+                            }
+                          }}
+                        >
+                          Apagar / Descartar Alertas
+                        </Button>
+                      </div>
+                    )}
                     </div>
                   </Tab>
                 </Tabs>
