@@ -53,9 +53,8 @@ class PasswordResetRequestView(APIView):
         if not email:
             return Response({"error": "Email requerido"}, status=status.HTTP_400_BAD_REQUEST)
         
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+        user = User.objects.filter(email=email).first()
+        if not user:
             return Response({"message": "Si la cuenta existe, se ha enviado un correo."})
         
         token = default_token_generator.make_token(user)
