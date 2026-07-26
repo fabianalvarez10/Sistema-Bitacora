@@ -50,7 +50,11 @@ class PasswordResetRequestView(APIView):
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
-        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+        frontend_url = request.META.get('HTTP_ORIGIN')
+        if not frontend_url:
+            frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+        frontend_url = frontend_url.rstrip('/')
+        
         reset_link = f"{frontend_url}/reset-password?uid={uid}&token={token}"
         
         try:
