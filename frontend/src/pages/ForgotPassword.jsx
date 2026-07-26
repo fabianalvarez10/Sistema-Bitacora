@@ -17,7 +17,11 @@ export default function ForgotPassword() {
       await api.post('/auth/password_reset/', { email });
       setStatus('success');
     } catch (error) {
-      setStatus('error');
+      if (error.response && error.response.data && error.response.data.error) {
+        setStatus(`error: ${error.response.data.error}`);
+      } else {
+        setStatus('error');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +62,13 @@ export default function ForgotPassword() {
                 isRequired
               />
 
-              {status === 'error' && <p className="text-red-500 text-sm text-center">Ocurrió un error al intentar enviar el correo. Por favor contacta con el administrador del sistema.</p>}
+              {status.startsWith('error') && (
+                <p className="text-red-500 text-sm text-center">
+                  {status === 'error' 
+                    ? "Ocurrió un error al intentar enviar el correo. Por favor contacta con el administrador del sistema." 
+                    : status.replace('error: ', '')}
+                </p>
+              )}
 
               <Button 
                 type="submit" 
