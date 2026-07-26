@@ -145,12 +145,12 @@ export default function Dashboard() {
     }
   }, [locationTab, zonas]);
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+  const uploadFile = async (file, resolveAlias = null) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (resolveAlias) {
+      formData.append('resolve_alias', resolveAlias);
+    }
 
     try {
       const response = await axios.post(`/upload-inventory/`, formData, {
@@ -158,14 +158,40 @@ export default function Dashboard() {
           'Content-Type': 'multipart/form-data',
         },
       });
-      if(response.status === 200) {
+      if(response.status === 200 || response.status === 201) {
         Swal.fire('¡Éxito!', 'Inventario subido exitosamente! Lo encontrarás en "Sin Asignar".', 'success');
         fetchComputers(locationTab);
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
-      Swal.fire('Error', 'Error al subir el archivo.', 'error');
+      if (error.response && error.response.status === 409 && error.response.data.conflict === 'alias') {
+        const { old_alias, new_alias } = error.response.data;
+        const result = await Swal.fire({
+          title: 'Conflicto de Nombre',
+          text: `El equipo ya estaba registrado como "${old_alias}", pero el archivo nuevo dice "${new_alias}". ¿Cuál nombre deseas conservar?`,
+          icon: 'question',
+          showDenyButton: true,
+          showCancelButton: true,
+          confirmButtonText: `Mantener "${old_alias}"`,
+          denyButtonText: `Usar "${new_alias}"`,
+          cancelButtonText: 'Cancelar'
+        });
+        
+        if (result.isConfirmed) {
+          await uploadFile(file, 'keep_old');
+        } else if (result.isDenied) {
+          await uploadFile(file, 'use_new');
+        }
+      } else {
+        console.error("Error uploading file:", error);
+        Swal.fire('Error', 'Error al subir el archivo.', 'error');
+      }
     }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    await uploadFile(file);
     e.target.value = null;
   };
 

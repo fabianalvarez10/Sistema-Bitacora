@@ -153,13 +153,37 @@ class UploadInventory(APIView):
             if not hostname:
                 return Response({"error": "Hostname is missing in the JSON data"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Compare to detect removals
-            alertas_remocion = {"programas": [], "hardware": [], "discos": []}
-            existing_computer = Computer.objects.filter(hostname=hostname).first()
+            # Manejo del alias y conflicto
+            new_alias = data.get('alias', '')
+            if new_alias is None:
+                new_alias = ''
+            new_alias = new_alias.strip()
+            
+            resolve_alias = request.POST.get('resolve_alias')
+            
+            if existing_computer and not resolve_alias:
+                old_alias = existing_computer.alias or ''
+                # Si ambos alias existen y son diferentes, preguntamos al usuario
+                if old_alias and new_alias and old_alias != new_alias:
+                    return Response({
+                        "conflict": "alias",
+                        "old_alias": old_alias,
+                        "new_alias": new_alias
+                    }, status=status.HTTP_409_CONFLICT)
+            
+            final_alias = new_alias if new_alias else None
+            if existing_computer:
+                if resolve_alias == 'keep_old':
+                    final_alias = existing_computer.alias
+                elif not new_alias:
+                    # Si el nuevo viene vacío, siempre conservar el viejo automáticamente
+                    final_alias = existing_computer.alias
             
             new_programas = data.get('programas', [])
             new_hardware = data.get('hardware_extra', [])
             new_discos = data.get('discos_detalle', [])
+            
+            alertas_remocion = {"programas": [], "hardware": [], "discos": []}
             
             if existing_computer:
                 old_discos = [d.get("modelo") for d in existing_computer.discos_detalle]
@@ -214,7 +238,7 @@ class UploadInventory(APIView):
             computer, created = Computer.objects.update_or_create(
                 hostname=hostname,
                 defaults={
-                    'alias': data.get('alias', None),
+                    'alias': final_alias,
                     'os_version': data.get('os_version', ''),
                     'motherboard': data.get('motherboard', ''),
                     'bios_version': data.get('bios_version', ''),
