@@ -190,21 +190,24 @@ class UploadInventory(APIView):
                 if old_proc and new_proc and old_proc != new_proc:
                     alertas_remocion["hardware"].append(f"Procesador cambiado. Era: {old_proc}")
                         
-                import copy
-                old_alertas = copy.deepcopy(existing_computer.alertas_remocion) if existing_computer.alertas_remocion else {"programas": [], "hardware": [], "discos": []}
+                # Construir un diccionario completamente nuevo para forzar a Django a detectar el cambio
+                old_alertas_raw = existing_computer.alertas_remocion if existing_computer.alertas_remocion else {}
+                new_alertas_dict = {"programas": [], "hardware": [], "discos": []}
+                
+                for k in ["programas", "hardware", "discos"]:
+                    if k in old_alertas_raw and isinstance(old_alertas_raw[k], list):
+                        new_alertas_dict[k] = list(old_alertas_raw[k]) # Copia superficial de la lista
+
                 import datetime
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
                 for key in ["programas", "hardware", "discos"]:
-                    # Asegurar que existan las claves
-                    if key not in old_alertas:
-                        old_alertas[key] = []
                     for item in alertas_remocion[key]:
-                        already_alerted = any(a.get("elemento") == item for a in old_alertas.get(key, []))
+                        already_alerted = any(a.get("elemento") == item for a in new_alertas_dict[key])
                         if not already_alerted:
-                            old_alertas[key].append({"elemento": item, "fecha_detectado": timestamp})
+                            new_alertas_dict[key].append({"elemento": item, "fecha_detectado": timestamp})
                 
-                alertas_remocion = old_alertas
+                alertas_remocion = new_alertas_dict
             else:
                 alertas_remocion = {"programas": [], "hardware": [], "discos": []}
 
