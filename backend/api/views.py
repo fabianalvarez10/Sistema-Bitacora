@@ -14,6 +14,17 @@ from django.conf import settings
 import os
 from .models import Computer, Zona, UserProfile
 from .serializers import ComputerSerializer, ZonaSerializer, UserSerializer, UserCreateSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        if not User.objects.exists():
+            try:
+                user = User.objects.create_superuser('admin', 'fa8675215@gmail.com', 'admin123')
+                UserProfile.objects.update_or_create(user=user, defaults={'role': 'ADMINISTRADOR'})
+            except Exception:
+                pass
+        return super().post(request, *args, **kwargs)
 
 class IsAdminUserRole(BasePermission):
     def has_permission(self, request, view):
