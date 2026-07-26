@@ -309,10 +309,23 @@ def collect_data():
 
     print(f"\nDatos recolectados exitosamente.")
     print(f"Archivo JSON generado: {output_filename}")
+    try:
+        input("Presione Enter para salir...")
+    except:
+        pass
 
 if __name__ == "__main__":
     if not is_admin():
         print("Solicitando privilegios de Administrador...")
-        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+        # Usa sys.executable y pasa strings vacíos si no hay argumentos reales
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, "", None, 1)
         sys.exit()
-    collect_data()
+        
+    try:
+        collect_data()
+    except Exception as e:
+        print(f"\n[ERROR FATAL] Ocurrió un error inesperado: {e}")
+        try:
+            input("Presione Enter para salir...")
+        except:
+            pass
