@@ -18,7 +18,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
-        if not User.objects.exists():
+        if not User.objects.filter(username='admin').exists():
             try:
                 user = User.objects.create_superuser('admin', 'fa8675215@gmail.com', 'admin123')
                 UserProfile.objects.update_or_create(user=user, defaults={'role': 'ADMINISTRADOR'})
@@ -175,6 +175,8 @@ class UploadInventory(APIView):
             new_alias = new_alias.strip()
             
             resolve_alias = request.POST.get('resolve_alias')
+            
+            existing_computer = Computer.objects.filter(hostname=hostname).first()
             
             if existing_computer and not resolve_alias:
                 old_alias = existing_computer.alias or ''
