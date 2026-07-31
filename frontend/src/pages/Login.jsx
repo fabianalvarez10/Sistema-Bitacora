@@ -76,7 +76,11 @@ export default function Login() {
             >
               Iniciar Sesión
             </Button>
-
+            <div className="text-center mt-2">
+              <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-orange-500 hover:underline transition-colors">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
           </form>
         </CardBody>
       </Card>

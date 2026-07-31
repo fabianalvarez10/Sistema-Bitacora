@@ -13,7 +13,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.conf import settings
 import os
 from .models import Computer, Zona, UserProfile
-from .serializers import ComputerSerializer, ZonaSerializer, UserSerializer, UserCreateSerializer
+from .serializers import ComputerSerializer, ZonaSerializer, UserSerializer, UserCreateSerializer, UserUpdateSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -37,6 +37,8 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return UserCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return UserUpdateSerializer
         return UserSerializer
 
 class CurrentUserView(APIView):
